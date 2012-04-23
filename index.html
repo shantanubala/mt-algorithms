@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+  <title>Multithreaded Algorithms</title>
+  <meta name="description" content="">
+
+  <!-- Mobile viewport optimized: h5bp.com/viewport -->
+  <meta name="viewport" content="width=device-width">
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- More ideas for your <head> here: h5bp.com/d/head-Tips -->
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+</head>
+<body>
+  <div class="navbar navbar-fixed-bottom">
+    <div class="navbar-inner">
+      <div class="container">
+        <a class="brand" href="#home-unit">Multithreaded Algorithms</a>
+        <ul class="nav pull-right">
+          <li><a href="#introduction-unit">Introduction</a></li>
+          <li><a href="#matrices-unit">Matrix Multiplication</a></li>
+          <li><a href="#merge-sort-unit">Merge Sort</a></li>
+          <li><a href="#conclusion-unit">Conclusion</a></li>
+          <li><a href="#glossary-unit">Glossary</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="container hero-unit" id="home-unit">
+    <h1>Multithreaded Algorithms</h1>
+    <p>An introduction to multithreaded algorithms written by Shantanu Bala.<br />This page is an honors enrichment project for Dr. Andrea Richa's CSE310 Spring 2012 class.</p>
+  </div>
+
+  <div class="container" id="introduction-unit">
+    <div class="row separated">
+      <h1>Introduction</h1>
+    </div>
+    <div class="row separated">
+      <div class="span4">
+        <h3>What are they?</h3>
+        <p><strong>Multithreaded algorithms</strong> are algorithms that are specifically designed to solve a problem while leveraging multiple CPU cores. This increases the <strong>throughput</strong> of an application by allowing parts of the algorithm to be executed in parallel.</p>
+      </div>
+      <div class="span4">
+        <h3>How do they work?</h3>
+        <p>The <strong>throughput</strong>, or the number of times an algorithm can solve a problem within a given span of time, increases with multithreading because it splits the main problem into subproblems that do not rely on the solutions of the other subproblems.</p>
+      </div>
+      <div class="span4">
+        <h3>What are limitations?</h3>
+        <p>Parallel algorithms follow Amdahl's Law, a concept that describes the limits of multithreading as a method of increasing throughput. Because a single algorithmic task often can never be 100% executed in parallel, the throughput gain from multithreading is finite.</p>
+      </div>
+    </div>
+    <div class="row separated">
+      <div class="span12">
+        <h3>How does Amdahl's Law affect throughput?</h3>
+      </div>
+      <div class="span6">
+        <p>Although the total <em>amount</em> of computational power of a processor increases with the addition of each CPU core, the <em>actual</em> increase in throughput of an algorithm follows an asymptotic curve as shown in the graph on the right [<a href="http://en.wikipedia.org/wiki/Amdahl%27s_law">source</a>].</p>
+        <p>This asymptotic curve is the basis for Amdahl's Law: since most modern computational instructions used in algorithms (by design) are sequential in nature, an algorithm can never be executed 100% in parallel. As a result, each additional CPU core increases the throughput less than the previously added cores.</p>
+        <p>The green, purple, red, and blue lines in the graph correspond to the maximum amount of increase in throughput afforded by the addition of CPU cores when a program or algorithm can be parallelized for 95%, 90%, 75%, and 50% of its instructions respectively.</p>
+        <p>When writing a multithreaded algorithm, it is important to understand the amount of instructions in the algorithm that can be executed in parallel without affecting the result. Similarly, it is also important to understand the capabilities of the hardware that will be used. Multithreaded programs will be <em>slower</em> when running on a single CPU core because additional resources are used to manage individual threads.</p>
+      </div>
+      <div class="span6">
+        <div class="thumbnail">
+        <img src="img/amdahl.png" alt="Graph of Amdahl's Law">
+        </div>
+      </div>
+    </div>
+    <div class="row separated">
+      <div class="span12">
+        <h3>Supercomputers</h3>
+      </div>
+      <div class="span4">
+        <p>One excellent example of highly-parallelized hardware is the IBM Blue Gene architecture for supercomputers. Along with other supercomputers, implementations of the Blue Gene architecture have produced data centers with nearly 300,000 CPU cores processing data simultaneously [<a href="http://en.wikipedia.org/wiki/Blue_gene">source</a>].</p>
+        <p>Currently, one of the primary applications of multithreaded algorithms is the processing of extremely large data sets. When dealing with terabytes of raw data, researchers at institutions like the Argonne National Laboratory must develop multithreaded algorithms for extremely-parallel hardware in order to avoid extremely slow throughput times (processing large data sets can take years on a single core!).</p>
+      </div>
+      <div class="span8">
+        <div id="blue-gene-carousel" class="carousel">
+          <div class="carousel-inner">
+            <div class="active item">
+              <img src="img/blue-gene-center.jpg" alt="IBM Blue Gene Data Center">
+              <div class="carousel-caption">
+                <p>A photograph of an IBM Blue Gene data center at Argonne National Laboratory.</p>
+              </div>
+            </div>
+            <div class="item">
+              <img src="img/blue-gene-cabinet.jpg" alt="IBM Blue Gene Server Cabinet">
+              <div class="carousel-caption">
+                <p>An up-close image of a Blue Gene server cabinet from Argonne National Laboratory.</p>
+              </div>
+            </div>
+            <div class="item">
+              <img src="img/blue-gene-card.jpg" alt="IBM Blue Gene Server Board">
+              <div class="carousel-caption">
+                <p>Arrays of IBM Blue Gene processors used in the server cabinets of a data center.</p>
+              </div>
+            </div>
+          </div>
+          <!-- Carousel nav -->
+          <a class="carousel-control left" href="#blue-gene-carousel" data-slide="prev">&lsaquo;</a>
+          <a class="carousel-control right" href="#blue-gene-carousel" data-slide="next">&rsaquo;</a>
+        </div>
+      </div>
+    </div>
+    <div class="row separated">
+      <div class="span12"><h3>Computer Graphics: Graphics Cards</h3></div>
+      <div class="span6">
+        <p>This video is a demonstration by Adam Savage and Jamie Hyneman from the television series Mythbusters. Adam and Jamie demonstrate the use of multi-core processors and parallelization in Graphics Processing Units (GPU's) that enable them to display graphical information with a much higher throughput than an ordinary CPU.</p>
+      </div>
+      <div class="span6">
+        <iframe width="460" height="264" src="http://www.youtube.com/embed/0udMBdo0Rac" frameborder="0" allowfullscreen></iframe>
+      </div>
+    </div>
+    <div class="row">
+      <div class="span12"><h3>Machine Learning: Neural Networks</h3></div>
+      <div class="span6">
+        <p>This video is an introduction to a concept from Machine Learning, Neural Networks. Neural Networks operate similar to neurons in the human brain. Since Machine Learning processes like Neural Networks require lengthy <em>training</em> where the data provided to the algorithm is used to generate a computational model, multithreading can allow robots or other computer systems to be more responsive by increasing the throughput of Machine Learning algorithms.</p>
+      </div>
+      <div class="span6">
+        <iframe width="460" height="342" src="http://www.youtube.com/embed/DG5-UyRBQD4" frameborder="0" allowfullscreen></iframe>
+      </div>
+    </div>
+  </div>
+
+  <div class="container" id="matrices-unit">
+    <div class="row separated">
+      <h1>Matrix Multiplication</h1>
+    </div>
+    <div class="row separated">
+      <div class="span12"><h3>Pseudocode for Multithreaded Matrix Multiplication</h3></div>
+      <div class="span7">
+        <pre class="prettyprint linenums">
+function multiplyMatrices(C, A, B):
+  n = A.rows
+  if n == 1:
+    C[1][1] = A[1][1] * B[1][1]
+  else:
+    T = new Matrix[n][n]
+    a1 = new Matrix[n/2][n/2] = A[1][1]...A[n/2][n/2]
+    a2 = new Matrix[n/2][n/2] = A[n/2][1]...A[n][n/2]
+    a3 = new Matrix[n/2][n/2] = A[1][n/2]...A[n/2][n]
+    a4 = new Matrix[n/2][n/2] = A[n/2][n/2]...A[n][n]
+    b1 = new Matrix[n/2][n/2] = B[1][1]...B[n/2][n/2]
+    b2 = new Matrix[n/2][n/2] = B[n/2][1]...B[n][n/2]
+    b3 = new Matrix[n/2][n/2] = B[1][n/2]...B[n/2][n]
+    b4 = new Matrix[n/2][n/2] = B[n/2][n/2]...B[n][n]
+    c1 = new Matrix[n/2][n/2] = C[1][1]...C[n/2][n/2]
+    c2 = new Matrix[n/2][n/2] = C[n/2][1]...C[n][n/2]
+    c3 = new Matrix[n/2][n/2] = C[1][n/2]...C[n/2][n]
+    c4 = new Matrix[n/2][n/2] = C[n/2][n/2]...C[n][n]
+    t1 = new Matrix[n/2][n/2] = T[1][1]...T[n/2][n/2]
+    t2 = new Matrix[n/2][n/2] = T[n/2][1]...T[n][n/2]
+    t3 = new Matrix[n/2][n/2] = T[1][n/2]...T[n/2][n]
+    t4 = new Matrix[n/2][n/2] = T[n/2][n/2]...T[n][n]
+
+    spawn multiplyMatrices(c1, a1, b1)
+    spawn multiplyMatrices(c3, a1, b3)
+    spawn multiplyMatrices(c2, a2, b1)
+    spawn multiplyMatrices(c4, a2, b3)
+    spawn multiplyMatrices(t1, a3, b2)
+    spawn multiplyMatrices(t3, a3, b4)
+    spawn multiplyMatrices(t2, a4, b2)
+    multiplyMatrices(t4, a4, b4)
+
+    sync
+
+    parallel for i = 1 to n:
+      parallel for j = 1 to n:
+        C[i][j] = C[i][j] + T[i][j]
+        </pre>
+      </div>
+      <div class="span5">
+        <p><br />Lines 3-4 of this pseudocode handle the base case where two <em>1x1</em> matrices are being multiplied. In this situation, the result is just the product of the first elements of the respective matrices.</p>
+        <p><strong>T</strong> is a temporary matrix.</p>
+        <p><br /><br /><br /><br />The matrices <strong>A</strong>, <strong>B</strong>, <strong>C</strong>, and <strong>T</strong> are split into 4 even <em>(n/2)x(n/2)</em> submatrices.</p>
+        <p><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br />Parallel recursive calls to <strong>multiplyMatrices</strong> are spawned, multiplying the submatrices from the previous step such that <strong>A</strong> and <strong>B</strong> are broken down until the base case (the multiplication of two <em>1x1</em> matrices) is reached.</p>
+        <p><br /><br /><br />The <strong>sync</strong> forces the parallel recursive calls to <strong>multiplyMatrices</strong> to be completed before the results are combined.</p>
+        <p>Since <a href="http://en.wikipedia.org/wiki/Matrix_multiplication">matrix multiplication</a> comes from the dot product of the row and column vectors of two matrices, the values present in <strong>T</strong> and <strong>C</strong> must be added together to arrive at the final answer.</p>
+      </div>
+      <div class="span12"><h3>Analysis of the Algorithm</h3></div>
+      <div class="span7">
+        <p>
+        On a single-core CPU, the multithreaded matrix multiplication algorithm presented above follows the following recurrence that represents the total amount of <strong>work</strong> done by the algorithm:
+        <br />
+        $$ M_{1}(n) = 8M_{1}(n/2) + \Theta(n^2) = \Theta(n^3)$$
+        </p>
+        <p>
+        On a processor with an infinite number of cores, the multithreaded matrix multiplication algorithm presented above would follow the following recurrence that models its <strong>span</strong>:<br />
+        $$ M_{\infty}(n) = M_{\infty}(n/2) + \Theta(log n) = \Theta(log^2 n) $$
+        </p>
+        <p>As indicated by the above analysis, the <strong>parallelism</strong> of the algorithm is:<br />
+           $$ M_{1}(n)/M_{\infty}(n) = \Theta(n^3 / log^2 n)$$
+        </p>
+        <p>Since matrix multiplication relies on the values of subproblems that are easily calculated in parallel, its parallelism as an algorithm is much higher than most parallel algorithms.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="container" id="merge-sort-unit">
+    <div class="row separated">
+      <h1>Merge Sort</h1>
+    </div>
+        <div class="row separated">
+      <div class="span12"><h3>Pseudocode for Multithreaded Merge Sort</h3></div>
+      <div class="span7">
+<pre class="prettyprint linenums">
+function mergeSort(A, p, r, B, s):
+  n = r - p + 1
+  if n == 1:
+    B[s] = A[p]
+  else
+    T = new Array[1...n]
+    q = Math.floor((p + r) / 2)
+    q2 = q - p + 1
+    spawn mergeSort(A, p, q, T, 1)
+    mergeSort(A, q+1, r, T, q2 + 1)
+    sync
+    merge(T, 1, q2, q2 + 1, n, B, s)
+</pre>
+
+<pre class="prettyprint linenums">
+function merge(T, p1, r1, p2, r2, A, p3):
+  n1 = r1 - p1 + 1
+  n2 = r2 - p2 + 1
+  if n1 &lt; n2:
+    temp = p1
+    p1 = p2
+    p2 = p1
+    temp = r1
+    r1 = r2
+    r2 = r1
+    temp = n1
+    n1 = n2
+    n2 = n1
+  if n1 == 0:
+    return
+  else:
+    q1 = Math.floor((p1 + r1) / 2)
+    q2 = binarySearch(T[q1], T, p2, r2)
+    q3 = p3 + (q1 - p1) + (q2 - p2)
+    A[q3] = T[q1]
+    spawn merge(T, p1, q1 - 1, p2, q2 - 1, A, p3)
+    merge(T, q1 + 1, r1, q2, r2, A, q3 + 1)
+    sync
+</pre>
+
+<pre class="prettyprint linenums">
+function binarySearch(x, T, p, r):
+  low = p
+  high = Math.max(p, r+1)
+  while low &lt; high:
+    mid = Math.floor((low + high) / 2)
+    if x &lt;= T[mid]:
+      high = mid
+    else:
+      low = mid + 1
+
+  return high
+</pre>
+      </div>
+      <div class="span5">
+        <p><br /><br />This multithreaded implementation of the <a href="http://en.wikipedia.org/wiki/Merge_sort">Merge Sort algorithm</a> is very similar to the regular implementation, except that the recursive calls to <strong>mergeSort</strong> are <strong>spawn</strong>ed on a new thread.</p>
+        <p><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br />This multithreaded implementation of <strong>merge</strong> is very similar to the regular implementation, except that the recursive calls to <strong>merge</strong> are <strong>spawn</strong>ed on a new thread.</p>
+        <p>The first <strong>if</strong> statement handles the condition in which the starting and ending indices for the two input arrays are incorrectly ordered.</p>
+        <p><br /><br /><br /><br />The second <strong>if</strong> statement handles the base case, in which the input arrays are both of length 0.</p>
+        <p><br /><br />The <strong>sync</strong> forces the parallel recursive calls to <strong>merge</strong> to be completed before the results are combined.</p>
+        <p><br /><br /><br /><br /><br /><br /><br /><br />This is a standard implementation of the <a href="http://en.wikipedia.org/wiki/Binary_search_algorithm">Binary Search algorithm</a>.</p>
+      </div>
+      <div class="span12"><h3>Analysis of the Algorithm</h3></div>
+
+      <div class="span7">
+        <p>
+        On a single-core CPU, the work done by the <strong>mergeSort</strong> function presented above follows the following recurrence:
+        <br />
+        $$ M_{1}(n) = 2M_{1}(n/2) + \Theta(n) = \Theta(n log n)$$
+        </p>
+        <p>
+        On a processor with an infinite number of cores, the multithreaded Merge Sort algorithm presented above would follow the following recurrence that models its <strong>span</strong>:<br />
+        $$ M_{\infty}(n) = M_{\infty}(n/2) + \Theta(n) = \Theta(n) $$
+        </p>
+        <p>As indicated by the above analysis, the <strong>parallelism</strong> of the algorithm is:<br />
+           $$ M_{1}(n)/M_{\infty}(n) = \Theta(log n)$$
+        </p>
+        <p>
+        On a single-core CPU, the work done by the <strong>merge</strong> function presented above follows the following recurrence because a recursive call to <strong>merge</strong> will only operate on <em>at the very most</em> <em>3n/4</em> elements:
+        <br />
+        $$ M_{1}(n) = M_{1}(\alpha n) + M_{1}((1 - \alpha)n) + O(log n) = \Theta(n)$$
+        </p>
+        <p>
+        On a processor with an infinite number of cores, the multithreaded <strong>merge</strong> function presented above would follow the following recurrence that models its <strong>span</strong>:<br />
+        $$ M_{\infty}(n) = M_{\infty}(3n/4) + \Theta(log n) = \Theta(log^2n) $$
+        </p>
+        <p>As indicated by the above analysis, the <strong>parallelism</strong> of the algorithm is:<br />
+           $$ M_{1}(n)/M_{\infty}(n) = \Theta(n/log^2n)$$
+        </p>
+      </div>
+    </div>
+    <div class="row separated">
+      <div class="span12">
+      <h3>Video of Merge Sort</h3>
+      </div>
+    </div>
+    <div class="row">
+      <div class="span6">
+        <p>To the right, you can view a video demonstration of a multithreaded implementation of the Merge Sort algorithm executed on a list of 50,000 elements with 512 parallel execution threads.</p>
+        <p>The sorted "list" in the video is a diagonal line across the screen, and the unsorted list in the beginning is the resulting image when each of the pixels from the line are horizontally shuffled to different locations. As the Merge operation of Merge Sort is completed, fewer and fewer of the "sorted" diagonal lines are combined until a single "sorted" diagonal line is formed.</p>
+      </div>
+      <div class="span6">
+        <iframe width="460" height="342" src="http://www.youtube.com/embed/pTeUZUnPDFI" frameborder="0" allowfullscreen></iframe>
+      </div>
+    </div>
+    <div class="row">
+      <div class="span12">
+      <h3>Comparison of Parallel Sorting Algorithms</h3>
+      </div>
+    </div>
+    <div class="row">
+      <div class="span6">
+        <p>To the right, you can view a video comparison of the execution times and functionality of single-threaded Merge Sort, multithreaded Quick Sort, multithreaded Merge Sort, and multithreaded Merge Sort with multithreaded Merge as executed on a list of 1,000 elements with 256 parallel execution threads.</p>
+        <p>The sorted "list" in the video is a diagonal line across the screen, and the unsorted list in the beginning is the resulting image when each of the pixels from the line are horizontally shuffled to different locations. As the sorting operation is completed, a single "sorted" diagonal line is formed.</p>
+      </div>
+      <div class="span6">
+        <iframe width="460" height="342" src="http://www.youtube.com/embed/SdgBjy1GWa0" frameborder="0" allowfullscreen></iframe>
+      </div>
+    </div>
+  </div>
+
+  <div class="container" id="conclusion-unit">
+    <div class="row separated">
+      <h1>Conclusion</h1>
+    </div>
+  </div>
+
+  <div class="container" id="glossary-unit">
+    <div class="row separated">
+      <h1>Glossary</h1>
+    </div>
+    <div class="row separated">
+      <div class="span3">
+        <h5>Serial Algorithm</h5>
+        <p>
+          An algorithm designed with instructions executed one-after-the-other.
+        </p>
+      </div>
+      <div class="span3">
+        <h5>Parallel Algorithm</h5>
+        <p>
+          An algorithm designed with portions of its instructions executed simultaneously.
+        </p>
+      </div>
+      <div class="span3">
+        <h5>Shared Memory</h5>
+        <p>
+          Memory that is accessible to all cores of a computer's processor.
+        </p>
+      </div>
+      <div class="span3">
+        <h5>Distributed Memory</h5>
+        <p>
+          Memory that is divided between the cores of a computer's processor and is private to each core.
+        </p>
+      </div>
+    </div>
+    <div class="row">
+      <div class="span3">
+        <h5>Multiprocessor</h5>
+        <p>
+          A processor in a computer that contains <strong>multiple cores</strong> that execute instructions simultaneously.
+        </p>
+      </div>
+      <div class="span3">
+        <h5>Static Threading</h5>
+        <p>
+          A software abstraction that allows a programmer to use shared memory while executing code on 2 or more CPU cores.
+        </p>
+      </div>
+      <div class="span3">
+        <h5>Concurrency Platform</h5>
+        <p>
+          A layer of software that coordinates, schedules, and manages parallel-computing resources.
+        </p>
+      </div>
+      <div class="span3">
+        <h5>Dynamic Multithreading</h5>
+        <p>
+          The programmatic specification of parallelism with automatic handling of communication protocols and load balancing.
+        </p>
+      </div>
+    </div>
+    <div class="row">
+      <div class="span3">
+        <h5>Spawn</h5>
+        <p>
+          A psuedocode keyword that is used to indicate the delegation of a function call to another thread.
+        </p>
+      </div>
+      <div class="span3">
+        <h5>Sync</h5>
+        <p>
+          A pseudocode keyword that is used to indicate the need to wait for the return value of a function call delegated to a separate thread.
+        </p>
+      </div>
+      <div class="span3">
+        <h5>Parallel</h5>
+        <p>
+          A pseudocode keyword that is used to indicate the execution of a programmatic loop in parallel.
+        </p>
+      </div>
+      <div class="span3">
+        <h5>Nested Parallelism</h5>
+        <p>
+          This term describes the <strong>spawning</strong> of a thread from the execution of a function that was previously spawned on a separate thread.
+        </p>
+      </div>
+    </div>
+    <div class="row">
+      <div class="span3">
+        <h5>Parent Thread</h5>
+        <p>
+          This term describes the function call or thread that spawns another thread.
+        </p>
+      </div>
+      <div class="span3">
+        <h5>Child Thread</h5>
+        <p>
+          This term describes a function call or thread that was spawned by another thread.
+        </p>
+      </div>
+      <div class="span3">
+        <h5>Scheduler</h5>
+        <p>
+          This is the component of the <strong>concurrency platform</strong> that determines the time at which any particular thread is actually executed in parallel.
+        </p>
+      </div>
+      <div class="span3">
+        <h5>Strand</h5>
+        <p>
+          A chain of instructions that cannot be executed in parallel and are grouped together for execution in the same thread.
+        </p>
+      </div>
+    </div>
+    <div class="row">
+      <div class="span3">
+        <h5>Work</h5>
+        <p>
+          The total time to execute a computation on a single processor.
+        </p>
+      </div>
+      <div class="span3">
+        <h5>Span</h5>
+        <p>
+          The longest time to execute the full sequence of <strong>strands</strong> in a program.
+        </p>
+      </div>
+      <div class="span3">
+        <h5>Speedup</h5>
+        <p>
+          The ratio of execution time of a program on a single processor core and a multiprocessor.
+        </p>
+      </div>
+      <div class="span3">
+        <h5>Parallelism</h5>
+        <p>
+          The speedup when a program may be executed on a processor with infinite processor cores.
+        </p>
+      </div>
+    </div>
+    <div class="row">
+      <div class="span3">
+        <h5>Slackness</h5>
+        <p>
+          The factor by which the parallelism of a program exceeds the number of processors.
+        </p>
+      </div>
+      <div class="span3">
+        <h5></h5>
+        <p>
+
+        </p>
+      </div>
+      <div class="span3">
+        <h5></h5>
+        <p>
+
+        </p>
+      </div>
+      <div class="span3">
+        <h5></h5>
+        <p>
+
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="container">
+      <div class="row">
+        <div class="span8">
+          &copy; 2012 Shantanu Bala
+        </div>
+        <div class="span4">
+          <a href="http://creativecommons.org/licenses/by-sa/3.0/">Some rights reserved.</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <br /><br /><br /><br />
+  <script src="js/jquery-1.7.2.min.js"></script>
+  <script src="js/bootstrap.min.js"></script>
+  <script src="js/home.js"></script>
+</body>
+</html>
