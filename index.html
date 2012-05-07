@@ -24,7 +24,7 @@
           <li><a href="#introduction-unit">Introduction</a></li>
           <li><a href="#matrices-unit">Matrix Multiplication</a></li>
           <li><a href="#merge-sort-unit">Merge Sort</a></li>
-          <!--<li><a href="#conclusion-unit">Conclusion</a></li>-->
+          <li><a href="#conclusion-unit">Conclusion</a></li>
           <li><a href="#glossary-unit">Glossary</a></li>
         </ul>
       </div>
@@ -180,8 +180,8 @@ function multiplyMatrices(C, A, B):
         <p><br /><br /><br />The <strong>sync</strong> forces the parallel recursive calls to <strong>multiplyMatrices</strong> to be completed before the results are combined.</p>
         <p>Since <a href="http://en.wikipedia.org/wiki/Matrix_multiplication">matrix multiplication</a> comes from the dot product of the row and column vectors of two matrices, the values present in <strong>T</strong> and <strong>C</strong> must be added together to arrive at the final answer.</p>
       </div>
-      <div class="span12"><h3>Analysis of the Algorithm</h3></div>
-      <div class="span7">
+      <div class="span6">
+		<h3>Analysis of the Algorithm</h3>
         <p>
         On a single-core CPU, the multithreaded matrix multiplication algorithm presented above follows the following recurrence that represents the total amount of <strong>work</strong> done by the algorithm:
         <br />
@@ -195,6 +195,12 @@ function multiplyMatrices(C, A, B):
            $$ M_{1}(n)/M_{\infty}(n) = \Theta(n^3 / log^2 n)$$
         </p>
         <p>Since matrix multiplication relies on the values of subproblems that are easily calculated in parallel, its parallelism as an algorithm is much higher than most parallel algorithms.</p>
+      </div>
+      <div class="span6">
+		<h3>Explanation of Matrix Multiplication</h3>
+		<p>The following diagram represents the subproblems of matrix multiplication: the dot product of the row and column vectors of two matrices [<a href="http://en.wikipedia.org/wiki/Matrix_multiplication">source</a>].</p>
+		<p><img src="img/matrix-mult-diagram.png" alt="Matrix Multiplication"></p>
+		<p>For more information, see <a href="http://en.wikipedia.org/wiki/Matrix_multiplication">Wikipedia</a> and the <a href="http://www.khanacademy.org/math/linear-algebra/v/matrix-multiplication--part-1">Khan Academy</a>.</p>
       </div>
     </div>
   </div>
@@ -269,9 +275,9 @@ function binarySearch(x, T, p, r):
         <p><br /><br />The <strong>sync</strong> forces the parallel recursive calls to <strong>merge</strong> to be completed before the results are combined.</p>
         <p><br /><br /><br /><br /><br /><br /><br /><br />This is a standard implementation of the <a href="http://en.wikipedia.org/wiki/Binary_search_algorithm">Binary Search algorithm</a>.</p>
       </div>
-      <div class="span12"><h3>Analysis of the Algorithm</h3></div>
 
-      <div class="span7">
+      <div class="span6">
+        <h3>Analysis of the Algorithm</h3>
         <p>
         On a single-core CPU, the work done by the <strong>mergeSort</strong> function presented above follows the following recurrence:
         <br />
@@ -296,6 +302,14 @@ function binarySearch(x, T, p, r):
         <p>As indicated by the above analysis, the <strong>parallelism</strong> of the algorithm is:<br />
            $$ M_{1}(n)/M_{\infty}(n) = \Theta(n/log^2n)$$
         </p>
+      </div>
+
+      <div class="span6"><h3>Difficulties Related to Binary Search</h3>
+        <p>The Binary Search algorithm, unlike Merge Sort or Matrix Multiplication, does not split the main problem (finding the index of a value) into smaller subproblems. Since Binary Search needs to store the previously-search index in the <strong>high</strong> and <strong>low</strong> variables present in the pseudocode above, the algorithm cannot be optimized because the next comparison in the <strong>while</strong> loop relies on the result from the previous comparison.</p>
+      </div>
+      <div class="span12">
+        <h3>Diagrams of Merge Sort Execution</h3>
+        <p>The following two diagrams demonstrate the Merge Sort algorithm when handled "by hand."
       </div>
     </div>
     <div class="row separated">
@@ -328,11 +342,11 @@ function binarySearch(x, T, p, r):
     </div>
   </div>
 
-  <!--<div class="container" id="conclusion-unit">
+  <div class="container" id="conclusion-unit">
     <div class="row separated">
       <h1>Conclusion</h1>
     </div>
-  </div>-->
+  </div>
 
   <div class="container" id="glossary-unit">
     <div class="row separated">
