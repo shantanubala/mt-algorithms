@@ -1,0 +1,98 @@
+import threading
+import random
+import time
+
+MATRIX_SIZE = (400, 400)
+TOTAL_ITERATIONS = 20
+
+def zero_matrix(m,n):
+  new_matrix = [[0 for row in range(n)] for col in range(m)]
+  return new_matrix
+
+def random_matrix(m,n):
+  new_matrix = [[random.random() for row in range(n)] for col in range(m)]
+  return new_matrix
+
+def print_matrix(matrix):
+  for col in matrix:
+    print col
+
+def mult(matrix1,matrix2):
+  if len(matrix1[0]) != len(matrix2):
+    print 'Matrices must be m*n and n*p to multiply!'
+  else:
+    new_matrix = zero_matrix(len(matrix1),len(matrix2[0]))
+    for i in range(len(matrix1)):
+      for j in range(len(matrix2[0])):
+        for k in range(len(matrix2)):
+          new_matrix[i][j] += matrix1[i][k]*matrix2[k][j]
+    return new_matrix
+
+class ThreadedMult(threading.Thread):
+  def __init__(self, m1, m2, **kwargs):
+    self.m1 = m1
+    self.m2 = m2
+    self.result = []
+    threading.Thread.__init__(self, **kwargs)
+
+  def run(self):
+    m1 = self.m1
+    m2 = self.m2
+    n = len(m1)
+    if len(m1[0]) != len(m2):
+      print 'Matrices must be square to multiply!'
+    elif n < 10:
+      self.result = mult(m1, m2)
+    else:
+      step = n / 10
+      i = 0
+      threads = []
+      while (i + step) < n:
+        threads.append(ThreadedMult(m1[i:i+step], m2))
+        i += step
+      if (n - i) > 0:
+        threads.append(ThreadedMult(m1[i:n], m2))
+
+      for t in threads:
+        t.start()
+
+      for t in threads:
+        t.join()
+        self.result.extend(t.result)
+
+total_utime = 0
+total_ttime = 0
+
+for y in range(TOTAL_ITERATIONS):
+  m1 = random_matrix(MATRIX_SIZE[0], MATRIX_SIZE[1])
+  m2 = random_matrix(MATRIX_SIZE[1], MATRIX_SIZE[0])
+
+  start = time.time()
+  single_mult = mult(m1, m2)
+  utime = time.time() - start
+  print "Regular implementation:", utime, "seconds."
+
+  threaded_sample = ThreadedMult(m1, m2)
+  start = time.time()
+  threaded_sample.start()
+  threaded_sample.join()
+  threaded_mult = threaded_sample.result
+  ttime = time.time() - start
+  print "Threaded implementation:", ttime, "seconds."
+
+  print "Threading overhead: ", ttime - utime, "seconds."
+
+  equal = True
+  for i in range(len(single_mult)):
+    for j in range(len(single_mult[0])):
+      equal = equal and single_mult[i][j] == threaded_mult[i][j]
+
+  if equal:
+    print "The results are equal."
+  else:
+    print "Thre results are not equal."
+
+  total_utime += utime
+  total_ttime += ttime
+
+print "Unthreaded:Threaded ratio: ", total_utime / total_ttime
