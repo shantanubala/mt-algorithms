@@ -131,7 +131,7 @@
     <div class="row separated">
       <div class="span12"><h3>Pseudocode for Multithreaded Matrix Multiplication</h3></div>
       <div class="span7">
-        <pre class="prettyprint linenums">
+        <pre class="prettyprint">
 function multiplyMatrices(C, A, B):
   n = A.rows
   if n == 1:
@@ -180,6 +180,13 @@ function multiplyMatrices(C, A, B):
         <p>Since <a href="http://en.wikipedia.org/wiki/Matrix_multiplication">matrix multiplication</a> comes from the dot product of the row and column vectors of two matrices, the values present in <strong>T</strong> and <strong>C</strong> must be added together to arrive at the final answer.</p>
       </div>
       <div class="span6">
+		<h3>Explanation of Matrix Multiplication</h3>
+		<p>The following diagram represents the subproblems of matrix multiplication: the dot product of the row and column vectors of two matrices [<a href="http://en.wikipedia.org/wiki/Matrix_multiplication">source</a>].</p>
+		<p><img src="img/matrix-mult-diagram.png" alt="Matrix Multiplication"></p>
+		<p>For more information, see <a href="http://en.wikipedia.org/wiki/Matrix_multiplication">Wikipedia</a> and the <a href="http://www.khanacademy.org/math/linear-algebra/v/matrix-multiplication--part-1">Khan Academy</a>.</p>
+        <p>Below, you will find Python code for a run-time demonstration of multithreaded matrix multiplication, along with a sample output from the demonstration showing 20 iterations of single-threaded and multithreaded multiplication of two 200x200 matrices. The benchmark times indicate total CPU time, including the overhead required by the OS for spawning and synchronizing threads.</p>
+      </div>
+      <div class="span6">
 		<h3>Analysis of the Algorithm</h3>
         <p>
         On a single-core CPU, the multithreaded matrix multiplication algorithm presented above follows the following recurrence that represents the total amount of <strong>work</strong> done by the algorithm:
@@ -195,11 +202,196 @@ function multiplyMatrices(C, A, B):
         </p>
         <p>Since matrix multiplication relies on the values of subproblems that are easily calculated in parallel, its parallelism as an algorithm is much higher than most parallel algorithms.</p>
       </div>
+    </div>
+    <div class="row separated">
       <div class="span6">
-		<h3>Explanation of Matrix Multiplication</h3>
-		<p>The following diagram represents the subproblems of matrix multiplication: the dot product of the row and column vectors of two matrices [<a href="http://en.wikipedia.org/wiki/Matrix_multiplication">source</a>].</p>
-		<p><img src="img/matrix-mult-diagram.png" alt="Matrix Multiplication"></p>
-		<p>For more information, see <a href="http://en.wikipedia.org/wiki/Matrix_multiplication">Wikipedia</a> and the <a href="http://www.khanacademy.org/math/linear-algebra/v/matrix-multiplication--part-1">Khan Academy</a>.</p>
+        <h3>Run-time Demonstration</h3>
+        <pre class="prettyprint">
+import threading
+import random
+import time
+
+MATRIX_SIZE = (200, 200)
+TOTAL_ITERATIONS = 20
+
+def zero_matrix(m,n):
+  new_matrix = [[0 for row in range(n)] for col in range(m)]
+  return new_matrix
+
+def random_matrix(m,n):
+  new_matrix = [[random.random() for row in range(n)] for col in range(m)]
+  return new_matrix
+
+def print_matrix(matrix):
+  for col in matrix:
+    print col
+
+def mult(matrix1,matrix2):
+  if len(matrix1[0]) != len(matrix2):
+    print 'Matrices must be m*n and n*p to multiply!'
+  else:
+    new_matrix = zero_matrix(len(matrix1),len(matrix2[0]))
+    for i in range(len(matrix1)):
+      for j in range(len(matrix2[0])):
+        for k in range(len(matrix2)):
+          new_matrix[i][j] += matrix1[i][k]*matrix2[k][j]
+    return new_matrix
+
+class ThreadedMult(threading.Thread):
+  def __init__(self, m1, m2, **kwargs):
+    self.m1 = m1
+    self.m2 = m2
+    self.result = []
+    threading.Thread.__init__(self, **kwargs)
+
+  def run(self):
+    m1 = self.m1
+    m2 = self.m2
+    n = len(m1)
+    if len(m1[0]) != len(m2):
+      print 'Matrices must be square to multiply!'
+    elif n < 10:
+      self.result = mult(m1, m2)
+    else:
+      step = n / 10
+      i = 0
+      threads = []
+      while (i + step) < n:
+        threads.append(ThreadedMult(m1[i:i+step], m2))
+        i += step
+      if (n - i) > 0:
+        threads.append(ThreadedMult(m1[i:n], m2))
+
+      for t in threads:
+        t.start()
+
+      for t in threads:
+        t.join()
+        self.result.extend(t.result)
+
+total_utime = 0
+total_ttime = 0
+
+for y in range(TOTAL_ITERATIONS):
+  m1 = random_matrix(MATRIX_SIZE[0], MATRIX_SIZE[1])
+  m2 = random_matrix(MATRIX_SIZE[1], MATRIX_SIZE[0])
+
+  start = time.time()
+  single_mult = mult(m1, m2)
+  utime = time.time() - start
+  print "Regular implementation:", utime, "seconds."
+
+  threaded_sample = ThreadedMult(m1, m2)
+  start = time.time()
+  threaded_sample.start()
+  threaded_sample.join()
+  threaded_mult = threaded_sample.result
+  ttime = time.time() - start
+  print "Threaded implementation:", ttime, "seconds."
+
+  print "Threading overhead: ", ttime - utime, "seconds."
+
+  equal = True
+  for i in range(len(single_mult)):
+    for j in range(len(single_mult[0])):
+      equal = equal and single_mult[i][j] == threaded_mult[i][j]
+
+  if equal:
+    print "The results are equal."
+  else:
+    print "Thre results are not equal."
+
+  total_utime += utime
+  total_ttime += ttime
+
+print "Unthreaded:Threaded ratio: ", total_utime / total_ttime
+        </pre>
+      </div>
+      <div class="span6">
+        <h3>Sample Output of Demo</h3>
+        <pre class="prettyprint">
+Regular implementation: 2.11618208885 seconds.
+Threaded implementation: 3.23017311096 seconds.
+Threading overhead:  1.11399102211 seconds.
+The results are equal.
+Regular implementation: 2.14634609222 seconds.
+Threaded implementation: 3.14311385155 seconds.
+Threading overhead:  0.996767759323 seconds.
+The results are equal.
+Regular implementation: 2.14657688141 seconds.
+Threaded implementation: 3.23033189774 seconds.
+Threading overhead:  1.08375501633 seconds.
+The results are equal.
+Regular implementation: 2.15448904037 seconds.
+Threaded implementation: 3.18466806412 seconds.
+Threading overhead:  1.03017902374 seconds.
+The results are equal.
+Regular implementation: 2.16370606422 seconds.
+Threaded implementation: 3.26226806641 seconds.
+Threading overhead:  1.09856200218 seconds.
+The results are equal.
+Regular implementation: 2.17773604393 seconds.
+Threaded implementation: 3.29016304016 seconds.
+Threading overhead:  1.11242699623 seconds.
+The results are equal.
+Regular implementation: 2.1634311676 seconds.
+Threaded implementation: 3.20348000526 seconds.
+Threading overhead:  1.04004883766 seconds.
+The results are equal.
+Regular implementation: 2.13924813271 seconds.
+Threaded implementation: 3.2506248951 seconds.
+Threading overhead:  1.11137676239 seconds.
+The results are equal.
+Regular implementation: 2.16290187836 seconds.
+Threaded implementation: 3.20742702484 seconds.
+Threading overhead:  1.04452514648 seconds.
+The results are equal.
+Regular implementation: 2.16222405434 seconds.
+Threaded implementation: 3.20069313049 seconds.
+Threading overhead:  1.03846907616 seconds.
+The results are equal.
+Regular implementation: 2.11181497574 seconds.
+Threaded implementation: 3.24382519722 seconds.
+Threading overhead:  1.13201022148 seconds.
+The results are equal.
+Regular implementation: 2.12940382957 seconds.
+Threaded implementation: 3.2539498806 seconds.
+Threading overhead:  1.12454605103 seconds.
+The results are equal.
+Regular implementation: 2.17440009117 seconds.
+Threaded implementation: 3.20231103897 seconds.
+Threading overhead:  1.0279109478 seconds.
+The results are equal.
+Regular implementation: 2.12763500214 seconds.
+Threaded implementation: 3.24842190742 seconds.
+Threading overhead:  1.12078690529 seconds.
+The results are equal.
+Regular implementation: 2.1404299736 seconds.
+Threaded implementation: 3.19953393936 seconds.
+Threading overhead:  1.05910396576 seconds.
+The results are equal.
+Regular implementation: 2.14696788788 seconds.
+Threaded implementation: 3.25090122223 seconds.
+Threading overhead:  1.10393333435 seconds.
+The results are equal.
+Regular implementation: 2.22095990181 seconds.
+Threaded implementation: 3.26174402237 seconds.
+Threading overhead:  1.04078412056 seconds.
+The results are equal.
+Regular implementation: 2.1863899231 seconds.
+Threaded implementation: 3.23105788231 seconds.
+Threading overhead:  1.04466795921 seconds.
+The results are equal.
+Regular implementation: 2.1539850235 seconds.
+Threaded implementation: 3.20885300636 seconds.
+Threading overhead:  1.05486798286 seconds.
+The results are equal.
+Regular implementation: 2.16126418114 seconds.
+Threaded implementation: 3.21673417091 seconds.
+Threading overhead:  1.05546998978 seconds.
+The results are equal.
+Unthreaded:Threaded ratio:  0.667791512001
+        </pre>
       </div>
     </div>
   </div>
@@ -211,7 +403,7 @@ function multiplyMatrices(C, A, B):
         <div class="row separated">
       <div class="span12"><h3>Pseudocode for Multithreaded Merge Sort</h3></div>
       <div class="span7">
-<pre class="prettyprint linenums">
+<pre class="prettyprint">
 function mergeSort(A, p, r, B, s):
   n = r - p + 1
   if n == 1:
@@ -226,7 +418,7 @@ function mergeSort(A, p, r, B, s):
     merge(T, 1, q2, q2 + 1, n, B, s)
 </pre>
 
-<pre class="prettyprint linenums">
+<pre class="prettyprint">
 function merge(T, p1, r1, p2, r2, A, p3):
   n1 = r1 - p1 + 1
   n2 = r2 - p2 + 1
@@ -252,7 +444,7 @@ function merge(T, p1, r1, p2, r2, A, p3):
     sync
 </pre>
 
-<pre class="prettyprint linenums">
+<pre class="prettyprint">
 function binarySearch(x, T, p, r):
   low = p
   high = Math.max(p, r+1)
@@ -328,9 +520,193 @@ function binarySearch(x, T, p, r):
       <div class="span6">
         <p>To the right, you can view a video demonstration of a multithreaded implementation of the Merge Sort algorithm executed on a list of 50,000 elements with 512 parallel execution threads.</p>
         <p>The sorted "list" in the video is a diagonal line across the screen, and the unsorted list in the beginning is the resulting image when each of the pixels from the line are horizontally shuffled to different locations. As the Merge operation of Merge Sort is completed, fewer and fewer of the "sorted" diagonal lines are combined until a single "sorted" diagonal line is formed.</p>
+        <p>Below, you will find Python code for a run-time demonstration of multithreaded merge sort, along with a sample output from the demonstration showing 20 iterations of single-threaded and multithreaded sorting of 200,000 random elements. The benchmark times indicate total CPU time, including the overhead required by the OS for spawning and synchronizing threads.</p>
       </div>
       <div class="span6">
         <iframe width="460" height="342" src="http://www.youtube.com/embed/pTeUZUnPDFI" frameborder="0" allowfullscreen></iframe>
+      </div>
+    </div>
+    <div class="row separated">
+      <div class="span6">
+        <h3>Run-time Demonstration</h3>
+        <pre class="prettyprint">
+import threading
+import random
+import time
+
+LIST_SIZE = 200000
+TOTAL_ITERATIONS = 20
+
+def merge(left, right):
+  result = []
+
+  while left and right:
+    if left[0] <= right[0]:
+      result.append(left.pop(0))
+    else:
+      result.append(right.pop(0))
+
+  if left:
+    result.extend(left)
+  if right:
+    result.extend(right)
+  return result
+
+def merge_sort(l):
+  if len(l) < 2:
+    return l
+  middle = len(l) / 2
+  left = merge_sort(l[:middle])
+  right = merge_sort(l[middle:])
+  return merge(left, right)
+
+class ThreadedSort(threading.Thread):
+  def __init__(self, lst, **kwargs):
+    self.lst = lst
+    threading.Thread.__init__(self, **kwargs)
+
+  def run(self):
+    l = self.lst
+    if 1 < len(l) < 1000:
+      middle = len(l) / 2
+      left = merge_sort(l[:middle])
+      right = merge_sort(l[middle:])
+      self.lst = merge(left, right)
+    else:
+      middle = len(l) / 2
+      left_thread = ThreadedSort(l[:middle])
+      right_thread = ThreadedSort(l[middle:])
+      left_thread.start()
+      right_thread.start()
+      left_thread.join()
+      right_thread.join()
+      self.lst = merge(left_thread.lst, right_thread.lst)
+
+total_utime = 0
+total_ttime = 0
+
+for y in range(TOTAL_ITERATIONS):
+  sample_list = []
+  for i in range(LIST_SIZE):
+    sample_list.append(random.randint(0, LIST_SIZE))
+
+  start = time.time()
+  single_sorted = merge_sort(sample_list)
+  utime = time.time() - start
+  print "Regular implementation:", utime, "seconds."
+
+  threaded_sample = ThreadedSort(sample_list)
+  start = time.time()
+  threaded_sample.start()
+  threaded_sample.join()
+  threaded_sorted = threaded_sample.lst
+  ttime = time.time() - start
+  print "Threaded implementation:", ttime, "seconds."
+
+  print "Threading overhead: ", ttime - utime, "seconds."
+
+  equal = True
+  for x in range(LIST_SIZE):
+    if single_sorted[x] != threaded_sorted[x]:
+      equal = False
+      break
+
+  if equal:
+    print "The results are equal."
+  else:
+    print "Thre results are not equal."
+
+  total_utime += utime
+  total_ttime += ttime
+
+print "Unthreaded:Threaded ratio: ", total_utime / total_ttime
+        </pre>
+      </div>
+      <div class="span6">
+        <h3>Sample Output of Demo</h3>
+        <pre class="prettyprint">
+Regular implementation: 5.53684401512 seconds.
+Threaded implementation: 6.70835995674 seconds.
+Threading overhead:  1.17151594162 seconds.
+The results are equal.
+Regular implementation: 5.64260601997 seconds.
+Threaded implementation: 6.72791099548 seconds.
+Threading overhead:  1.08530497551 seconds.
+The results are equal.
+Regular implementation: 5.62852311134 seconds.
+Threaded implementation: 6.78940796852 seconds.
+Threading overhead:  1.16088485718 seconds.
+The results are equal.
+Regular implementation: 5.65552401543 seconds.
+Threaded implementation: 6.85554814339 seconds.
+Threading overhead:  1.20002412796 seconds.
+The results are equal.
+Regular implementation: 5.78146505356 seconds.
+Threaded implementation: 6.8217048645 seconds.
+Threading overhead:  1.04023981094 seconds.
+The results are equal.
+Regular implementation: 5.61178684235 seconds.
+Threaded implementation: 6.76777505875 seconds.
+Threading overhead:  1.1559882164 seconds.
+The results are equal.
+Regular implementation: 5.57701802254 seconds.
+Threaded implementation: 6.93167209625 seconds.
+Threading overhead:  1.35465407372 seconds.
+The results are equal.
+Regular implementation: 5.60108113289 seconds.
+Threaded implementation: 6.90342903137 seconds.
+Threading overhead:  1.30234789848 seconds.
+The results are equal.
+Regular implementation: 5.59894990921 seconds.
+Threaded implementation: 6.79823184013 seconds.
+Threading overhead:  1.19928193092 seconds.
+The results are equal.
+Regular implementation: 5.59718108177 seconds.
+Threaded implementation: 6.90508317947 seconds.
+Threading overhead:  1.3079020977 seconds.
+The results are equal.
+Regular implementation: 5.59603214264 seconds.
+Threaded implementation: 7.0819568634 seconds.
+Threading overhead:  1.48592472076 seconds.
+The results are equal.
+Regular implementation: 5.57651782036 seconds.
+Threaded implementation: 6.81592392921 seconds.
+Threading overhead:  1.23940610886 seconds.
+The results are equal.
+Regular implementation: 5.57425713539 seconds.
+Threaded implementation: 6.7655711174 seconds.
+Threading overhead:  1.19131398201 seconds.
+The results are equal.
+Regular implementation: 5.6062130928 seconds.
+Threaded implementation: 6.88873195648 seconds.
+Threading overhead:  1.28251886368 seconds.
+The results are equal.
+Regular implementation: 5.55545091629 seconds.
+Threaded implementation: 6.74864506721 seconds.
+Threading overhead:  1.19319415092 seconds.
+The results are equal.
+Regular implementation: 5.58515095711 seconds.
+Threaded implementation: 6.80785298347 seconds.
+Threading overhead:  1.22270202637 seconds.
+The results are equal.
+Regular implementation: 5.5728058815 seconds.
+Threaded implementation: 6.84219384193 seconds.
+Threading overhead:  1.26938796043 seconds.
+The results are equal.
+Regular implementation: 5.6099550724 seconds.
+Threaded implementation: 6.81285405159 seconds.
+Threading overhead:  1.20289897919 seconds.
+The results are equal.
+Regular implementation: 5.69153785706 seconds.
+Threaded implementation: 6.83303999901 seconds.
+Threading overhead:  1.14150214195 seconds.
+The results are equal.
+Regular implementation: 5.9380300045 seconds.
+Threaded implementation: 7.82567191124 seconds.
+Threading overhead:  1.88764190674 seconds.
+The results are equal.
+Unthreaded:Threaded ratio:  0.81766802697
+        </pre>
       </div>
     </div>
     <div class="row">
